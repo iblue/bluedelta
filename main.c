@@ -7,7 +7,7 @@
 
 void help(char* name) {
     printf("Usage: %s [OPTION]... FILE1 FILE2 PATCHFILE\n", name);
-    printf("Compary binary files chunk by chunk.\n");
+    printf("Diff and patch sector-based binary files.\n");
     printf("\n");
     printf("-v, --verbose    Show verbose output\n");
     printf("-h, --help       Show usage information\n");
