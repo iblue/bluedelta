@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c11 -Wall -Werror -ggdb -O3
+CFLAGS=-std=c11 -Wall -Werror -ggdb
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
 BINARY=bluedelta
