@@ -37,7 +37,7 @@ int diff(char* file1name, char *file2name, char *outfilename, int chunksize, int
   fseek(file1, 0, SEEK_SET);
 
   fseek(file2, 0, SEEK_END);
-  header.file2_size = ftell(file1);
+  header.file2_size = ftell(file2);
   fseek(file2, 0, SEEK_SET);
 
   fwrite(&header, sizeof(file_header_t), 1, outfile);

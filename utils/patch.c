@@ -12,13 +12,17 @@ static inline void copy(FILE* out, FILE* in, size_t bytes, int chunksize) {
 		exit(128);
 	}
 	while(1) {
-          int bytecnt = fread(buffer, 1, chunksize, in);
+	  int readbytes = bytes;
+	  if(readbytes > chunksize) {
+		readbytes = chunksize;
+	  }
+          int bytecnt = fread(buffer, 1, readbytes, in);
           fwrite(buffer, bytecnt, 1, out);
-	  if(bytecnt < chunksize) {
+	  if(bytecnt < readbytes) {
 		break;
 	  }
-	  bytes -= chunksize;
-	  if(bytes < chunksize) {
+	  bytes -= bytecnt;
+	  if(bytes == 0) {
 		break;
 	  }
 	}
@@ -101,6 +105,9 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 	while(!feof(patchfile)) {
 		records = fread(&diff_record.position, sizeof(diff_record.position), 1, patchfile);
 		if(records != 1) {
+			if(feof(patchfile)) {
+				break;
+			}
 			printf("  ERROR: Could not read data record position structure (fread failed)\n");
 			exit(128);
 		}
@@ -117,16 +124,17 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 		}
 
 		// Since records are sequentially ordered, we now copy everything up until position
-		position += diff_record.position - position;
 		copy(file2, file1, diff_record.position - position, chunksize);
+		position += diff_record.position - position;
 
 		if(verbose) {
 			printf("  DEBUG: Appending %ld bytes from patch file\n", diff_record.length);
 		}
+
 		// And then the patched sector
-		//
+		copy(file2, patchfile, diff_record.length, chunksize);
 		position += diff_record.length;
-		copy(file2, file1, diff_record.length, chunksize);
+		fseek(file1, position, SEEK_SET); // Skip this in the input file
 
 		if(verbose) {
 			printf("  DEBUG: File positions:\n");
@@ -136,10 +144,9 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 		}
 	}
 
-	// We fucked up.
+	// Copy the rest of the sectors
 	if(position != header.file2_size) {
-		printf("  ERROR: The resulting file %s is too small (unknown error)\n", file2name);
-		return 1;
+		copy(file2, file1, header.file2_size - position, chunksize);
 	}
 	
 	// gg ez
