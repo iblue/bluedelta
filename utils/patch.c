@@ -7,10 +7,7 @@
 
 static inline void copy(FILE* out, FILE* in, size_t bytes, int chunksize) {
 	uint8_t* buffer = malloc(chunksize);
-	if(bytes % chunksize != 0) {
-		printf("  ERROR: chunksize\n");
-		exit(128);
-	}
+
 	while(1) {
 	  int readbytes = bytes;
 	  if(readbytes > chunksize) {
