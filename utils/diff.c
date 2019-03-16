@@ -3,96 +3,93 @@
 #include <stdio.h>
 
 #include "diff.h"
+#include "format.h"
 
 int diff(char* file1name, char *file2name, char *outfilename, int chunksize, int verbose) {
-	FILE *file1 = fopen(file1name, "rb");
-	if(!file1) {
-		perror(file1name);
-		exit(2);
-	}
+  FILE *file1 = fopen(file1name, "rb");
+  if(!file1) {
+    perror(file1name);
+    exit(2);
+  }
 
-	FILE *file2 = fopen(file2name, "rb");
-	if(!file2) {
-		perror(file2name);
-		exit(2);
-	}
+  FILE *file2 = fopen(file2name, "rb");
+  if(!file2) {
+    perror(file2name);
+    exit(2);
+  }
 
-	FILE *outfile = fopen(outfilename, "wb");
-	if(!outfile) {
-		perror(outfilename);
-		exit(2);
-	}
+  FILE *outfile = fopen(outfilename, "wb");
+  if(!outfile) {
+    perror(outfilename);
+     exit(2);
+  }
 
-	char* buffer1 = malloc(chunksize); size_t readbytes1=0;
-	char* buffer2 = malloc(chunksize); size_t readbytes2=0;
-	size_t pos=0;
+  // Create and initialize incomplete file header
+  file_header_t header;
+  header.magic = HEADER_MAGIC;
+  header.version = HEADER_VERSION;
+  header.incomplete = HEADER_INCOMPLETE_YES;
+  header.chunk_size = chunksize;
 
-	// FIXME: Write file header. Should contain:
-	// - magic number
-	// - version
-	// - incomplete flag (until file is done)
-	// - size of file1
-	// - size of file2
-	// - hash of file1 (to check if input file is the correct one)
-	// - hash of file2 (to check if it all went well)
+  fseek(file1, 0, SEEK_END);
+  header.file1_size = ftell(file1);
+  fseek(file1, 0, SEEK_SET);
 
-	while(1) {
-          readbytes1 = fread(buffer1, 1, chunksize, file1);
-          readbytes2 = fread(buffer2, 1, chunksize, file2);
+  fseek(file2, 0, SEEK_END);
+  header.file2_size = ftell(file1);
+  fseek(file2, 0, SEEK_SET);
 
-	  // We want to produce file2 from file1. So if file2 ended, just write the ending sector and exit.
-	  if(readbytes2 < readbytes1) {
-	    char cmd = 'E';
-            fwrite(&cmd, sizeof(char), 1, outfile);
-	    fwrite(&pos, sizeof(size_t), 1, outfile);
-	    fwrite(&readbytes2, sizeof(size_t), 1, outfile);
-	    fwrite(buffer2, chunksize, 1, outfile);
-            break;
-	  }
+  fwrite(&header, sizeof(file_header_t), 1, outfile);
 
-	  // So, if file1 ends, we need to append the rest of file2. We first save an ending record with the last sector
-	  if(readbytes1 < readbytes2) {
-	    char cmd = 'e';
-            fwrite(&cmd, sizeof(char), 1, outfile);
-	    fwrite(&pos, sizeof(size_t), 1, outfile);
-	    fwrite(&readbytes2, sizeof(size_t), 1, outfile);
-	    fwrite(buffer2, chunksize, 1, outfile);
-            break;
-	  }
+  // Allocate buffers
+  uint8_t *buffer1 = malloc(chunksize);
+  uint8_t *buffer2 = malloc(chunksize);
 
-	  // Otherwise
+  // Start diffing
+  uint64_t position=0;
+  while(1) {
+    size_t bytecnt1 = fread(buffer1, 1, chunksize, file1);
+    size_t bytecnt2 = fread(buffer2, 1, chunksize, file2);
 
-	  if(memcmp(buffer1, buffer2, chunksize) != 0) {
-	    char cmd = 'd';
-            fwrite(&cmd, sizeof(char), 1, outfile);
-		  fwrite(&pos, sizeof(size_t), 1, outfile);
-		  fwrite(buffer2, chunksize, 1, outfile);
+    if(bytecnt1 != bytecnt2 || memcmp(buffer1, buffer2, chunksize) != 0) {
+      if(verbose) {
+        printf("  DEBUG: Found diff at position %ld\n", position);
+      }
+      // The files differ here. Write diff record.
+      data_record_t diff_record;
+      diff_record.position = position;
+      diff_record.length = bytecnt2;
 
-		  if(verbose) {
-		    printf("  Found difference at %ld\n", pos);
-		  }
-	  }
-	  pos += chunksize;
+      fwrite(&diff_record.position, sizeof(diff_record.position), 1, outfile);
+      fwrite(&diff_record.length,  sizeof(diff_record.length),  1, outfile);
+      fwrite(buffer2, bytecnt2, 1, outfile);
+    }
 
-	  if(readbytes1 < chunksize) {
-		  break;
-	  }
-	}
+    position += bytecnt2;
 
-	// Append the rest of file2
-	while(1) {
-          readbytes2 = fread(buffer2, 1, chunksize, file2);
-	  fwrite(buffer2, readbytes2, 1, outfile);
-	  if(readbytes2 < chunksize) {
-		  break;
-	  }
-	}
+    // Check for file ends
+    if(feof(file2)) {
+      // We are done.
+      break;
+    }
 
-	fclose(outfile);
-	fclose(file2);
-	fclose(file1);
+    if(feof(file1)) {
+      // file1 ended, just append the rest of file2
+      data_record_t diff_record;
+      diff_record.position = position;
+      diff_record.length = header.file2_size - position;
+      fwrite(&diff_record.position, sizeof(diff_record.position), 1, outfile);
+      fwrite(&diff_record.length, sizeof(diff_record.length),  1, outfile);
 
-	return 0;
+      while(!feof(file2)) {
+        bytecnt2 = fread(buffer2, 1, chunksize, file2);
+        fwrite(buffer2, bytecnt2, 1, outfile);
+      }
 
+      break;
+    }
+  }
+
+  return 0;
 }
 
