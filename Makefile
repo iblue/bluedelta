@@ -3,15 +3,15 @@ CFLAGS=-std=c11 -Wall -Werror -ggdb
 VALGRIND=valgrind --tool=memcheck --leak-check=yes
 STRIP=strip
 BINARY=bluedelta
-MAIN_C = main.c
+MAIN_C = src/main.c
 MAIN_O = $(MAIN_C:.c=.o)
 
-INCLUDES = -I./include -I.
-SOURCES  = $(shell find -path "./utils/*" -name "*.c")
+INCLUDES = -I./src/include -I.
+SOURCES  = $(shell find -path "./src/utils/*" -name "*.c")
 
 OBJECTS  = $(SOURCES:.c=.o)
 
-TEST_SOURCES = $(shell find -path "./test/*"     -name "*.c")
+TEST_SOURCES = $(shell find -path "./src/test/*" -name "*.c")
 TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
 TESTS        = $(TEST_SOURCES:.c=.test)
 

@@ -85,7 +85,7 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 	}
 	fseek(file1, 0, SEEK_END);
 	if(header.file1_size != ftell(file1)) {
-          printf("  ERROR: %s is not a valid input file (expected to be %ld bytes, is %ld bytes)\n", file2name, header.file1_size, ftell(file1));
+          printf("  ERROR: %s is not a valid input file (expected to be %ld bytes, is %ld bytes)\n", file2name, (long int)header.file1_size, ftell(file1));
 	  exit(128);
 	}
 	fseek(file1, 0, SEEK_SET);
@@ -115,9 +115,9 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 		}
 
 		if(verbose) {
-			printf("  DEBUG: Found diff record. Position: %ld, length: %ld\n", diff_record.position, diff_record.length);
-			printf("  DEBUG: Currently I am at position %ld\n", position);
-			printf("  DEBUG: Copying %ld bytes from input file\n", diff_record.position - position);
+			printf("  DEBUG: Found diff record. Position: %ld, length: %ld\n", (long int)diff_record.position, (long int)diff_record.length);
+			printf("  DEBUG: Currently I am at position %ld\n", (long int)position);
+			printf("  DEBUG: Copying %ld bytes from input file\n", (long int)(diff_record.position - position));
 		}
 
 		// Since records are sequentially ordered, we now copy everything up until position
@@ -125,7 +125,7 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 		position += diff_record.position - position;
 
 		if(verbose) {
-			printf("  DEBUG: Appending %ld bytes from patch file\n", diff_record.length);
+			printf("  DEBUG: Appending %ld bytes from patch file\n", (long int)diff_record.length);
 		}
 
 		// And then the patched sector
