@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "format.h"
 #include "patch.h"
@@ -85,7 +86,7 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 	}
 	fseek(file1, 0, SEEK_END);
 	if(header.file1_size != ftell(file1)) {
-          printf("  ERROR: %s is not a valid input file (expected to be %ld bytes, is %ld bytes)\n", file2name, header.file1_size, ftell(file1));
+          printf("  ERROR: %s is not a valid input file (expected to be %" PRIu64 " bytes, is %" PRIu64 " bytes)\n", file2name, header.file1_size, ftell(file1));
 	  exit(128);
 	}
 	fseek(file1, 0, SEEK_SET);
@@ -94,9 +95,9 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 	uint64_t position=0;
 	if(verbose) {
 		printf("  DEBUG: File positions:\n");
-		printf("    FILE1 (input):  %ld\n", ftell(file1));
-		printf("    FILE2 (output): %ld\n", ftell(file2));
-		printf("    PATCH FILE:     %ld\n\n", ftell(patchfile));
+		printf("    FILE1 (input):  %" PRIu64 "\n", ftell(file1));
+		printf("    FILE2 (output): %" PRIu64 "\n", ftell(file2));
+		printf("    PATCH FILE:     %" PRIu64 "\n\n", ftell(patchfile));
 	}
 
 	while(!feof(patchfile)) {
@@ -115,9 +116,9 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 		}
 
 		if(verbose) {
-			printf("  DEBUG: Found diff record. Position: %ld, length: %ld\n", diff_record.position, diff_record.length);
-			printf("  DEBUG: Currently I am at position %ld\n", position);
-			printf("  DEBUG: Copying %ld bytes from input file\n", diff_record.position - position);
+			printf("  DEBUG: Found diff record. Position: %" PRIu64 ", length: %" PRIu64 "\n", diff_record.position, diff_record.length);
+			printf("  DEBUG: Currently I am at position %" PRIu64 "\n", position);
+			printf("  DEBUG: Copying %" PRIu64 " bytes from input file\n", diff_record.position - position);
 		}
 
 		// Since records are sequentially ordered, we now copy everything up until position
@@ -125,7 +126,7 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 		position += diff_record.position - position;
 
 		if(verbose) {
-			printf("  DEBUG: Appending %ld bytes from patch file\n", diff_record.length);
+			printf("  DEBUG: Appending %" PRIu64 " bytes from patch file\n", diff_record.length);
 		}
 
 		// And then the patched sector
@@ -135,9 +136,9 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 
 		if(verbose) {
 			printf("  DEBUG: File positions:\n");
-			printf("    FILE1 (input):  %ld\n", ftell(file1));
-			printf("    FILE2 (output): %ld\n", ftell(file2));
-			printf("    PATCH FILE:     %ld\n\n", ftell(patchfile));
+			printf("    FILE1 (input):  %" PRIu64 "\n", ftell(file1));
+			printf("    FILE2 (output): %" PRIu64 "\n", ftell(file2));
+			printf("    PATCH FILE:     %" PRIu64 "\n\n", ftell(patchfile));
 		}
 	}
 
