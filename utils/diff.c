@@ -1,3 +1,6 @@
+#define _FILE_OFFSET_BITS 64
+#define _POSIX_C_SOURCE 200808L
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,13 +36,13 @@ int diff(char* file1name, char *file2name, char *outfilename, int chunksize, int
   header.incomplete = HEADER_INCOMPLETE_YES;
   header.chunk_size = chunksize;
 
-  fseek(file1, 0, SEEK_END);
-  header.file1_size = ftell(file1);
-  fseek(file1, 0, SEEK_SET);
+  fseeko(file1, 0, SEEK_END);
+  header.file1_size = ftello(file1);
+  fseeko(file1, 0, SEEK_SET);
 
-  fseek(file2, 0, SEEK_END);
-  header.file2_size = ftell(file2);
-  fseek(file2, 0, SEEK_SET);
+  fseeko(file2, 0, SEEK_END);
+  header.file2_size = ftello(file2);
+  fseeko(file2, 0, SEEK_SET);
 
   fwrite(&header, sizeof(file_header_t), 1, outfile);
 
@@ -72,9 +75,9 @@ int diff(char* file1name, char *file2name, char *outfilename, int chunksize, int
 
 	if(verbose) {
 		printf("  DEBUG: File positions:\n");
-		printf("    FILE1 (input):  %" PRIu64 "\n", ftell(file1));
-		printf("    FILE2 (output): %" PRIu64 "\n", ftell(file2));
-		printf("    PATCH FILE:     %" PRIu64 "\n\n", ftell(outfile));
+		printf("    FILE1 (input):  %" PRIu64 "\n", ftello(file1));
+		printf("    FILE2 (output): %" PRIu64 "\n", ftello(file2));
+		printf("    PATCH FILE:     %" PRIu64 "\n\n", ftello(outfile));
 	}
     }
 
@@ -110,7 +113,7 @@ int diff(char* file1name, char *file2name, char *outfilename, int chunksize, int
   }
 
   // Write final header
-  fseek(outfile, 0, SEEK_SET);
+  fseeko(outfile, 0, SEEK_SET);
   header.incomplete = HEADER_INCOMPLETE_NO;
   fwrite(&header, sizeof(file_header_t), 1, outfile);
 

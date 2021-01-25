@@ -1,3 +1,6 @@
+#define _FILE_OFFSET_BITS 64
+#define _POSIX_C_SOURCE 200808L
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -84,20 +87,20 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 	if(verbose) {
 		printf("  DEBUG: Checking input file size...\n");
 	}
-	fseek(file1, 0, SEEK_END);
-	if(header.file1_size != ftell(file1)) {
-          printf("  ERROR: %s is not a valid input file (expected to be %" PRIu64 " bytes, is %" PRIu64 " bytes)\n", file2name, header.file1_size, ftell(file1));
+	fseeko(file1, 0, SEEK_END);
+	if(header.file1_size != ftello(file1)) {
+          printf("  ERROR: %s is not a valid input file (expected to be %" PRIu64 " bytes, is %" PRIu64 " bytes)\n", file2name, header.file1_size, ftello(file1));
 	  exit(128);
 	}
-	fseek(file1, 0, SEEK_SET);
+	fseeko(file1, 0, SEEK_SET);
 
 	data_record_t diff_record;
 	uint64_t position=0;
 	if(verbose) {
 		printf("  DEBUG: File positions:\n");
-		printf("    FILE1 (input):  %" PRIu64 "\n", ftell(file1));
-		printf("    FILE2 (output): %" PRIu64 "\n", ftell(file2));
-		printf("    PATCH FILE:     %" PRIu64 "\n\n", ftell(patchfile));
+		printf("    FILE1 (input):  %" PRIu64 "\n", ftello(file1));
+		printf("    FILE2 (output): %" PRIu64 "\n", ftello(file2));
+		printf("    PATCH FILE:     %" PRIu64 "\n\n", ftello(patchfile));
 	}
 
 	while(!feof(patchfile)) {
@@ -132,13 +135,13 @@ int patch(char* file1name, char *file2name, char *patchfilename, int chunksize, 
 		// And then the patched sector
 		copy(file2, patchfile, diff_record.length, chunksize);
 		position += diff_record.length;
-		fseek(file1, position, SEEK_SET); // Skip this in the input file
+		fseeko(file1, position, SEEK_SET); // Skip this in the input file
 
 		if(verbose) {
 			printf("  DEBUG: File positions:\n");
-			printf("    FILE1 (input):  %" PRIu64 "\n", ftell(file1));
-			printf("    FILE2 (output): %" PRIu64 "\n", ftell(file2));
-			printf("    PATCH FILE:     %" PRIu64 "\n\n", ftell(patchfile));
+			printf("    FILE1 (input):  %" PRIu64 "\n", ftello(file1));
+			printf("    FILE2 (output): %" PRIu64 "\n", ftello(file2));
+			printf("    PATCH FILE:     %" PRIu64 "\n\n", ftello(patchfile));
 		}
 	}
 
